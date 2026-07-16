@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>YAZAKI · App de Campo · E4</title>
+<style>
+  :root{
+    --bg: #14161a;
+    --bg-elev: #1d2026;
+    --bg-elev-2: #262a32;
+    --border: #333844;
+    --text: #eef0f3;
+    --text-dim: #9aa1ad;
+    --orange: #ff7a1a;
+    --orange-dim: #ff7a1a33;
+    --green: #35c77e;
+    --yellow: #e8c547;
+    --red: #ef4d4d;
+    --radius: 10px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+  body{ padding-bottom: 90px; }
+
+  header{
+    position:sticky; top:0; z-index:20;
+    background: linear-gradient(180deg, #17191d 0%, #14161a 100%);
+    border-bottom:1px solid var(--border);
+    padding: 14px 16px 12px 16px;
+  }
+  .brand{ display:flex; align-items:center; justify-content:space-between; }
+  .brand-left{ display:flex; align-items:center; gap:10px; }
+  .logo{
+    width:34px; height:34px; border-radius:8px;
+    background: linear-gradient(135deg, var(--orange), #ff9a4d);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; color:#1a1a1a; font-size:14px;
+  }
+  .brand-title{ font-size:15px; font-weight:700; letter-spacing:0.3px; }
+  .brand-sub{ font-size:11px; color:var(--text-dim); margin-top:1px; }
+  .status-pill{
+    font-size:11px; padding:4px 9px; border-radius:99px;
+    background: var(--bg-elev-2); color: var(--text-dim); border:1px solid var(--border);
+  }
+  .status-pill.ok{ color: var(--green); border-color: #2f7a54; }
+  .status-pill.err{ color: var(--red); border-color: #7a2f2f; }
+
+  .filters{ padding: 12px 16px 4px 16px; }
+  .filter-row{ display:flex; gap:8px; overflow-x:auto; padding-bottom:8px; scrollbar-width:none; }
+  .filter-row::-webkit-scrollbar{ display:none; }
+  .chip{
+    flex:0 0 auto; padding:7px 13px; border-radius:99px; font-size:12.5px; font-weight:600;
+    background: var(--bg-elev); border:1px solid var(--border); color:var(--text-dim);
+    white-space:nowrap; cursor:pointer; user-select:none;
+  }
+  .chip.active{ background: var(--orange-dim); border-color: var(--orange); color: var(--orange); }
+
+  .search-box{ padding: 4px 16px 10px 16px; }
+  .search-box input{
+    width:100%; padding:10px 12px; border-radius: var(--radius); border:1px solid var(--border);
+    background: var(--bg-elev); color:var(--text); font-size:14px;
+  }
+  .search-box input:focus{ outline:none; border-color: var(--orange); }
+
+  .summary-bar{
+    margin: 4px 16px 8px 16px; padding: 10px 12px; border-radius: var(--radius);
+    background: var(--bg-elev); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between; font-size:12px; color:var(--text-dim);
+  }
+  .summary-bar b{ color: var(--text); font-size: 13px; }
+
+  .list{ padding: 4px 16px 16px 16px; display:flex; flex-direction:column; gap:10px; }
+
+  .task-card{
+    background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 13px;
+  }
+  .task-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .task-meta{ font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:3px;}
+  .task-name{ font-size:14px; font-weight:600; line-height:1.35; }
+  .task-dates{ font-size:11px; color:var(--text-dim); margin-top:5px; }
+
+  .badge{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:99px; flex:0 0 auto; white-space:nowrap; }
+  .badge.green{ background:#35c77e22; color:var(--green); }
+  .badge.yellow{ background:#e8c54722; color:var(--yellow); }
+  .badge.red{ background:#ef4d4d22; color:var(--red); }
+
+  .progress-row{ margin-top:10px; }
+  .progress-track{ height:8px; border-radius:99px; background: var(--bg-elev-2); overflow:hidden; position:relative; }
+  .progress-fill{ height:100%; background: linear-gradient(90deg, var(--orange), #ff9a4d); border-radius:99px; transition: width 0.2s; }
+  .progress-plan-marker{ position:absolute; top:-2px; width:2px; height:12px; background:#ffffff88; }
+
+  .progress-labels{ display:flex; justify-content:space-between; font-size:11px; color:var(--text-dim); margin-top:4px;}
+
+  .edit-row{ display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .edit-row input[type=range]{ flex:1; accent-color: var(--orange); }
+  .pct-input{
+    width:58px; padding:6px 6px; text-align:center; border-radius:8px; border:1px solid var(--border);
+    background: var(--bg-elev-2); color:var(--text); font-size:13px; font-weight:700;
+  }
+  .save-btn{
+    padding:7px 14px; border-radius:8px; border:none; background: var(--orange); color:#1a1200;
+    font-weight:700; font-size:12.5px; cursor:pointer;
+  }
+  .save-btn:disabled{ opacity:0.4; }
+  .save-btn.saved{ background: var(--green); color:#052; }
+
+  .resumen-tag{ font-size:10.5px; color: var(--text-dim); font-style:italic; margin-top:8px; }
+
+  .empty-state{ text-align:center; color:var(--text-dim); padding: 40px 20px; font-size:13px; }
+
+  .loading{ text-align:center; padding:40px; color:var(--text-dim); font-size:13px; }
+
+  footer{
+    position:fixed; bottom:0; left:0; right:0; z-index:20;
+    background: var(--bg-elev); border-top:1px solid var(--border);
+    padding: 10px 16px; display:flex; justify-content:space-between; align-items:center;
+    font-size:11px; color: var(--text-dim);
+  }
+  footer b{ color:var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-left">
+      <div class="logo">E4</div>
+      <div>
+        <div class="brand-title">YAZAKI · App de Campo</div>
+        <div class="brand-sub">Constructora E4 SA</div>
+      </div>
+    </div>
+    <div class="status-pill" id="connStatus">conectando...</div>
+  </div>
+</header>
+
+<div class="filters">
+  <div class="filter-row" id="areaFilters"></div>
+  <div class="filter-row" id="procesoFilters"></div>
+</div>
+
+<div class="search-box">
+  <input type="text" id="searchInput" placeholder="Buscar actividad...">
+</div>
+
+<div class="summary-bar" id="summaryBar">Cargando resumen...</div>
+
+<div class="list" id="taskList">
+  <div class="loading">Cargando cronograma...</div>
+</div>
+
+<footer>
+  <span>Supervisor: <b id="supervisorName">-</b></span>
+  <span id="taskCount">-</span>
+</footer>
+
+<script>
+// ============================================================
+// CONFIGURACION: reemplazar por la URL real del Worker desplegado
+// ============================================================
+var API_BASE = "https://yazaki-monitoreo.TU-SUBDOMINIO.workers.dev";
+
+var allTasks = [];
+var activeArea = "TODAS";
+var activeProceso = "TODOS";
+var searchText = "";
+var supervisorName = localStorage.getItem("yazaki_supervisor") || "";
+
+function initSupervisor() {
+  if (!supervisorName) {
+    supervisorName = window.prompt("Nombre del supervisor:") || "Supervisor";
+    localStorage.setItem("yazaki_supervisor", supervisorName);
+  }
+  document.getElementById("supervisorName").textContent = supervisorName;
+}
+
+function setConnStatus(ok, msg) {
+  var el = document.getElementById("connStatus");
+  el.textContent = msg;
+  el.className = "status-pill " + (ok ? "ok" : "err");
+}
+
+function fetchTasks() {
+  setConnStatus(false, "conectando...");
+  fetch(API_BASE + "/api/tasks")
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      allTasks = data.tasks.filter(function (t) { return !t.resumen; });
+      setConnStatus(true, "en linea");
+      renderFilters();
+      renderList();
+      renderSummary();
+    })
+    .catch(function (err) {
+      setConnStatus(false, "sin conexion");
+      document.getElementById("taskList").innerHTML =
+        '<div class="empty-state">No se pudo conectar al servidor.<br>Revisa tu conexion e intenta de nuevo.</div>';
+    });
+}
+
+function uniqueInOrder(arr) {
+  var seen = {};
+  var out = [];
+  arr.forEach(function (v) {
+    if (!seen[v]) { seen[v] = true; out.push(v); }
+  });
+  return out;
+}
+
+function renderFilters() {
+  var areas = uniqueInOrder(allTasks.map(function (t) { return t.area; }));
+  var areaHtml = '<div class="chip' + (activeArea === "TODAS" ? " active" : "") + '" data-area="TODAS">Todas las areas</div>';
+  areas.forEach(function (a) {
+    areaHtml += '<div class="chip' + (activeArea === a ? " active" : "") + '" data-area="' + a + '">' + a + '</div>';
+  });
+  document.getElementById("areaFilters").innerHTML = areaHtml;
+
+  var procesos = uniqueInOrder(
+    allTasks.filter(function (t) { return activeArea === "TODAS" || t.area === activeArea; })
+      .map(function (t) { return t.proceso; })
+  );
+  var procHtml = '<div class="chip' + (activeProceso === "TODOS" ? " active" : "") + '" data-proceso="TODOS">Todos los procesos</div>';
+  procesos.forEach(function (p) {
+    procHtml += '<div class="chip' + (activeProceso === p ? " active" : "") + '" data-proceso="' + p + '">' + p + '</div>';
+  });
+  document.getElementById("procesoFilters").innerHTML = procHtml;
+
+  Array.prototype.forEach.call(document.querySelectorAll("#areaFilters .chip"), function (chip) {
+    chip.addEventListener("click", function () {
+      activeArea = chip.getAttribute("data-area");
+      activeProceso = "TODOS";
+      renderFilters();
+      renderList();
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("#procesoFilters .chip"), function (chip) {
+    chip.addEventListener("click", function () {
+      activeProceso = chip.getAttribute("data-proceso");
+      renderList();
+    });
+  });
+}
+
+function statusBadge(t) {
+  var desv = t.pctReal - t.pctPlan;
+  if (desv >= 0) return { cls: "green", label: "AL DIA" };
+  if (desv >= -0.05) return { cls: "yellow", label: "LEVE ATRASO" };
+  return { cls: "red", label: "ATRASADO" };
+}
+
+function fmtPct(v) {
+  return Math.round(v * 100) + "%";
+}
+
+function fmtFecha(iso) {
+  if (!iso) return "-";
+  var parts = iso.split("-");
+  return parts[2] + "/" + parts[1] + "/" + parts[0].slice(2);
+}
+
+function renderList() {
+  var filtered = allTasks.filter(function (t) {
+    if (activeArea !== "TODAS" && t.area !== activeArea) return false;
+    if (activeProceso !== "TODOS" && t.proceso !== activeProceso) return false;
+    if (searchText && t.nombre.toLowerCase().indexOf(searchText.toLowerCase()) === -1) return false;
+    return true;
+  });
+
+  document.getElementById("taskCount").textContent = filtered.length + " tareas";
+
+  if (filtered.length === 0) {
+    document.getElementById("taskList").innerHTML = '<div class="empty-state">No hay tareas con estos filtros.</div>';
+    return;
+  }
+
+  var html = "";
+  filtered.forEach(function (t) {
+    var badge = statusBadge(t);
+    var actLabel = t.actividad ? t.actividad : t.proceso;
+    html += ''
+      + '<div class="task-card" data-id="' + t.id + '">'
+      + '  <div class="task-top">'
+      + '    <div>'
+      + '      <div class="task-meta">' + t.area + ' &middot; ' + actLabel + '</div>'
+      + '      <div class="task-name">' + t.nombre + '</div>'
+      + '      <div class="task-dates">' + fmtFecha(t.inicio) + ' &rarr; ' + fmtFecha(t.fin) + ' (' + t.dur + ' dias)</div>'
+      + '    </div>'
+      + '    <div class="badge ' + badge.cls + '">' + badge.label + '</div>'
+      + '  </div>'
+      + '  <div class="progress-row">'
+      + '    <div class="progress-track">'
+      + '      <div class="progress-fill" style="width:' + Math.round(t.pctReal * 100) + '%"></div>'
+      + '      <div class="progress-plan-marker" style="left:' + Math.round(t.pctPlan * 100) + '%"></div>'
+      + '    </div>'
+      + '    <div class="progress-labels"><span>Real: ' + fmtPct(t.pctReal) + '</span><span>Plan: ' + fmtPct(t.pctPlan) + '</span></div>'
+      + '  </div>'
+      + '  <div class="edit-row">'
+      + '    <input type="range" min="0" max="100" step="1" value="' + Math.round(t.pctReal * 100) + '" class="range-input">'
+      + '    <input type="number" min="0" max="100" step="1" value="' + Math.round(t.pctReal * 100) + '" class="pct-input">'
+      + '    <button class="save-btn">Guardar</button>'
+      + '  </div>'
+      + '</div>';
+  });
+  document.getElementById("taskList").innerHTML = html;
+
+  Array.prototype.forEach.call(document.querySelectorAll(".task-card"), function (card) {
+    var id = card.getAttribute("data-id");
+    var range = card.querySelector(".range-input");
+    var num = card.querySelector(".pct-input");
+    var btn = card.querySelector(".save-btn");
+
+    range.addEventListener("input", function () { num.value = range.value; });
+    num.addEventListener("input", function () { range.value = num.value; });
+
+    btn.addEventListener("click", function () {
+      var val = Math.max(0, Math.min(100, Number(num.value) || 0));
+      btn.disabled = true;
+      btn.textContent = "Guardando...";
+      fetch(API_BASE + "/api/tasks/" + id, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pctReal: val / 100, updatedBy: supervisorName }),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (resp) {
+          btn.disabled = false;
+          if (resp.ok) {
+            btn.textContent = "Guardado";
+            btn.className = "save-btn saved";
+            setTimeout(function () {
+              btn.textContent = "Guardar";
+              btn.className = "save-btn";
+            }, 1500);
+            var task = allTasks.find(function (t) { return t.id === id; });
+            if (task) task.pctReal = val / 100;
+            renderList();
+            renderSummary();
+          } else {
+            btn.textContent = "Error, reintentar";
+          }
+        })
+        .catch(function () {
+          btn.disabled = false;
+          btn.textContent = "Error, reintentar";
+        });
+    });
+  });
+}
+
+function renderSummary() {
+  var totalDur = allTasks.reduce(function (a, t) { return a + t.dur; }, 0);
+  if (totalDur === 0) return;
+  var pctReal = allTasks.reduce(function (a, t) { return a + t.pctReal * t.dur; }, 0) / totalDur;
+  var pctPlan = allTasks.reduce(function (a, t) { return a + t.pctPlan * t.dur; }, 0) / totalDur;
+  document.getElementById("summaryBar").innerHTML =
+    'Avance filtrado: <b>' + fmtPct(pctReal) + '</b> real vs <b>' + fmtPct(pctPlan) + '</b> plan &middot; ' + allTasks.length + ' tareas totales';
+}
+
+document.getElementById("searchInput").addEventListener("input", function (e) {
+  searchText = e.target.value;
+  renderList();
+});
+
+initSupervisor();
+fetchTasks();
+</script>
+
+</body>
+</html>

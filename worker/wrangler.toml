@@ -1,0 +1,10 @@
+name = "yazaki-monitoreo"
+main = "worker.js"
+compatibility_date = "2024-09-01"
+
+# Namespace de KV donde se guarda el % Real reportado por los supervisores.
+# Se crea una sola vez con: wrangler kv namespace create YAZAKI_KV
+# y luego se pega aqui el "id" que retorna ese comando.
+kv_namespaces = [
+  { binding = "YAZAKI_KV", id = "PEGAR_AQUI_EL_ID_DEL_NAMESPACE" }
+]
