@@ -30,10 +30,11 @@
   .brand{ display:flex; align-items:center; gap:12px; }
   .logo{
     width:42px; height:42px; border-radius:10px;
-    background: linear-gradient(135deg, var(--orange), var(--orange-soft));
+    background: #ffffff;
     display:flex; align-items:center; justify-content:center;
-    font-weight:800; color:#1a1200; font-size:16px;
+    padding: 4px;
   }
+  .logo img{ width:100%; height:100%; object-fit:contain; }
   .brand-title{ font-size:19px; font-weight:800; letter-spacing:0.2px; }
   .brand-sub{ font-size:12.5px; color:var(--text-dim); margin-top:2px; }
   .updated-tag{ font-size:11.5px; color:var(--text-dim); text-align:right; }
@@ -90,13 +91,59 @@
   .loading, .empty-state{ text-align:center; color:var(--text-dim); padding: 60px 20px; font-size:13px; }
 
   footer{ text-align:center; padding: 24px; color: var(--text-dim); font-size:11.5px; border-top:1px solid var(--border); }
+
+  /* ===== Semaforo ===== */
+  .semaforo-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:14px; }
+  .sem-card{
+    border-radius: var(--radius); padding:16px; cursor:pointer; border:1px solid var(--border);
+    background: var(--bg-elev); transition: transform 0.12s, border-color 0.12s;
+  }
+  .sem-card:hover{ transform: translateY(-2px); }
+  .sem-card.active{ border-color: var(--orange); }
+  .sem-dot{ width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:7px; }
+  .sem-dot.red{ background: var(--red); } .sem-dot.yellow{ background: var(--yellow); }
+  .sem-dot.green{ background: var(--green); } .sem-dot.grey{ background: #8a919c; }
+  .sem-label{ font-size:12.5px; color: var(--text-dim); font-weight:600; }
+  .sem-count{ font-size:30px; font-weight:800; margin-top:6px; }
+  .sem-pct{ font-size:11.5px; color: var(--text-dim); margin-top:2px; }
+
+  .sem-table-wrap{ background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius); padding:6px 16px 14px 16px; }
+  .sem-table-empty{ text-align:center; color:var(--text-dim); padding:20px; font-size:12.5px; }
+
+  /* ===== Resumen visual ===== */
+  .viz-grid{ display:grid; grid-template-columns: 1.3fr 1fr; gap:16px; margin-bottom:16px; }
+  @media (max-width: 860px){ .viz-grid{ grid-template-columns: 1fr; } }
+
+  .scurve-legend{ display:flex; gap:18px; margin-top:2px; margin-bottom:10px; font-size:11.5px; color:var(--text-dim); }
+  .legend-item{ display:flex; align-items:center; gap:6px; }
+  .legend-swatch{ width:16px; height:3px; border-radius:2px; }
+
+  .bars-list{ display:flex; flex-direction:column; gap:10px; margin-top:4px; }
+  .bar-row{ display:grid; grid-template-columns: 140px 1fr 46px; align-items:center; gap:10px; }
+  .bar-row-label{ font-size:11.5px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .bar-track{ height:14px; border-radius:6px; background: var(--bg-elev-2); overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:6px; }
+  .bar-fill.green{ background: linear-gradient(90deg,#2a9d63,var(--green)); }
+  .bar-fill.yellow{ background: linear-gradient(90deg,#c7a730,var(--yellow)); }
+  .bar-fill.red{ background: linear-gradient(90deg,#c23d3d,var(--red)); }
+  .bar-row-pct{ font-size:11.5px; font-weight:700; text-align:right; }
+
+  .ranking-list{ display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+  .rank-row{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; background: var(--bg-elev-2); }
+  .rank-num{
+    width:22px; height:22px; border-radius:50%; background: var(--bg-elev); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex:0 0 auto; color: var(--text-dim);
+  }
+  .rank-num.top1{ background: var(--orange); border-color: var(--orange); color:#1a1200; }
+  .rank-name{ font-size:12.5px; flex:1; }
+  .rank-pct{ font-size:13px; font-weight:800; }
 </style>
 </head>
 <body>
 
 <header>
   <div class="brand">
-    <div class="logo">E4</div>
+    <div class="logo"><img src="data:image/png;base64,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" alt="E4"></div>
     <div>
       <div class="brand-title">YAZAKI &middot; Avance de Proyecto</div>
       <div class="brand-sub">Constructora E4 SA</div>
@@ -109,13 +156,48 @@
   <div class="loading">Cargando informacion del proyecto...</div>
 </main>
 
+<div id="extraSections" style="display:none;">
+  <main style="padding-top:0;">
+
+    <h2 class="section-title" style="margin-top:6px;">Semaforo de actividades</h2>
+    <div class="semaforo-grid" id="semaforoGrid"></div>
+    <div class="sem-table-wrap">
+      <table id="semTable"><thead><tr><th>Area</th><th>Proceso</th><th>Actividad</th><th class="num">Plan</th><th class="num">Real</th><th>Estado</th></tr></thead><tbody id="semTableBody"></tbody></table>
+      <div class="sem-table-empty" id="semTableEmpty" style="display:none;">No hay actividades en este estado.</div>
+    </div>
+
+    <h2 class="section-title">Resumen visual</h2>
+    <div class="viz-grid">
+      <div class="card">
+        <div class="label" style="font-size:12.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.6px;">Curva S: planificado vs ejecutado</div>
+        <div class="scurve-legend">
+          <div class="legend-item"><span class="legend-swatch" style="background:#6b7280;"></span>Planificado (proyecto completo)</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--orange);"></span>Ejecutado (a la fecha)</div>
+        </div>
+        <div id="scurveContainer"></div>
+      </div>
+      <div class="card">
+        <div class="label" style="font-size:12.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:10px;">Avance por area</div>
+        <div class="bars-list" id="barsList"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="label" style="font-size:12.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:10px;">Ranking de areas por avance</div>
+      <div class="ranking-list" id="rankingList"></div>
+    </div>
+
+  </main>
+</div>
+
+
 <footer>Constructora E4 SA &middot; Sistema de monitoreo YAZAKI</footer>
 
 <script>
 // ============================================================
 // CONFIGURACION: reemplazar por la URL real del Worker desplegado
 // ============================================================
-var API_BASE = "https://yazaki.juanfernando-solares.workers.dev";
+var API_BASE = "https://yazaki-monitoreo.TU-SUBDOMINIO.workers.dev";
 
 function fmtPct(v) {
   return Math.round(v * 100) + "%";
@@ -202,11 +284,247 @@ function renderDashboard(summary) {
     "Actualizado: " + updated.toLocaleDateString("es-GT") + " " + updated.toLocaleTimeString("es-GT");
 }
 
-function loadSummary() {
-  fetch(API_BASE + "/api/summary")
-    .then(function (r) { return r.json(); })
-    .then(function (summary) {
+function taskStatus(t) {
+  if (t.pctReal === 0 && t.pctPlan === 0) {
+    return { key: "no_iniciada", cls: "grey", label: "No iniciada" };
+  }
+  var desv = t.pctReal - t.pctPlan;
+  if (desv >= 0) return { key: "al_dia", cls: "green", label: "Al dia" };
+  if (desv >= -0.05) return { key: "en_riesgo", cls: "yellow", label: "En riesgo" };
+  return { key: "atrasada", cls: "red", label: "Atrasada" };
+}
+
+var allTasksGlobal = [];
+var activeSemFilter = "todos";
+
+function renderSemaforo(tasks) {
+  var leaf = tasks.filter(function (t) { return !t.resumen; });
+  var counts = { no_iniciada: 0, atrasada: 0, en_riesgo: 0, al_dia: 0 };
+  var statusMap = {};
+  leaf.forEach(function (t) {
+    var st = taskStatus(t);
+    counts[st.key] = (counts[st.key] || 0) + 1;
+    statusMap[t.id] = st;
+  });
+  var total = leaf.length;
+
+  var cardsDef = [
+    { key: "atrasada", cls: "red", label: "Atrasadas" },
+    { key: "en_riesgo", cls: "yellow", label: "En riesgo" },
+    { key: "al_dia", cls: "green", label: "Al dia" },
+    { key: "no_iniciada", cls: "grey", label: "No iniciadas" },
+  ];
+  var cardsHtml = "";
+  cardsDef.forEach(function (c) {
+    var n = counts[c.key] || 0;
+    var pct = total > 0 ? Math.round((n / total) * 100) : 0;
+    cardsHtml += '<div class="sem-card' + (activeSemFilter === c.key ? " active" : "") + '" data-status="' + c.key + '">';
+    cardsHtml += '  <div class="sem-label"><span class="sem-dot ' + c.cls + '"></span>' + c.label + "</div>";
+    cardsHtml += '  <div class="sem-count">' + n + "</div>";
+    cardsHtml += '  <div class="sem-pct">' + pct + "% del total</div>";
+    cardsHtml += "</div>";
+  });
+  document.getElementById("semaforoGrid").innerHTML = cardsHtml;
+
+  Array.prototype.forEach.call(document.querySelectorAll(".sem-card"), function (card) {
+    card.addEventListener("click", function () {
+      var key = card.getAttribute("data-status");
+      activeSemFilter = activeSemFilter === key ? "todos" : key;
+      renderSemaforo(allTasksGlobal);
+    });
+  });
+
+  var filtered = activeSemFilter === "todos" ? leaf : leaf.filter(function (t) { return statusMap[t.id].key === activeSemFilter; });
+  var body = document.getElementById("semTableBody");
+  var empty = document.getElementById("semTableEmpty");
+  if (filtered.length === 0) {
+    body.innerHTML = "";
+    empty.style.display = "block";
+  } else {
+    empty.style.display = "none";
+    var rowsHtml = "";
+    filtered.forEach(function (t) {
+      var st = statusMap[t.id];
+      rowsHtml += "<tr>";
+      rowsHtml += "  <td>" + t.area + "</td>";
+      rowsHtml += "  <td>" + t.proceso + "</td>";
+      rowsHtml += "  <td>" + t.nombre + "</td>";
+      rowsHtml += '  <td class="num">' + fmtPct(t.pctPlan) + "</td>";
+      rowsHtml += '  <td class="num">' + fmtPct(t.pctReal) + "</td>";
+      rowsHtml += '  <td><span class="mini-badge ' + st.cls + '">' + st.label + "</span></td>";
+      rowsHtml += "</tr>";
+    });
+    body.innerHTML = rowsHtml;
+  }
+}
+
+function renderBars(summary) {
+  var html = "";
+  summary.areas.forEach(function (a) {
+    var st = statusFromDeviation(a.desviacion);
+    html += '<div class="bar-row">';
+    html += '  <div class="bar-row-label" title="' + a.area + '">' + a.area + "</div>";
+    html += '  <div class="bar-track"><div class="bar-fill ' + st.cls + '" style="width:' + Math.round(a.pctReal * 100) + '%"></div></div>';
+    html += '  <div class="bar-row-pct">' + fmtPct(a.pctReal) + "</div>";
+    html += "</div>";
+  });
+  document.getElementById("barsList").innerHTML = html;
+}
+
+function renderRanking(summary) {
+  var sorted = summary.areas.slice().sort(function (a, b) { return b.pctReal - a.pctReal; });
+  var html = "";
+  sorted.forEach(function (a, idx) {
+    html += '<div class="rank-row">';
+    html += '  <div class="rank-num' + (idx === 0 ? " top1" : "") + '">' + (idx + 1) + "</div>";
+    html += '  <div class="rank-name">' + a.area + "</div>";
+    html += '  <div class="rank-pct">' + fmtPct(a.pctReal) + "</div>";
+    html += "</div>";
+  });
+  document.getElementById("rankingList").innerHTML = html;
+}
+
+function buildSCurveData(tasks) {
+  var leaf = tasks.filter(function (t) { return !t.resumen && t.inicio && t.fin; });
+  var totalDur = leaf.reduce(function (acc, t) { return acc + t.dur; }, 0);
+  if (totalDur === 0) return null;
+
+  var parsed = leaf.map(function (t) {
+    return {
+      ini: new Date(t.inicio + "T00:00:00").getTime(),
+      fin: new Date(t.fin + "T00:00:00").getTime(),
+      w: t.dur / totalDur,
+      pctReal: t.pctReal,
+    };
+  });
+
+  var minTime = Math.min.apply(null, parsed.map(function (p) { return p.ini; }));
+  var maxTime = Math.max.apply(null, parsed.map(function (p) { return p.fin; }));
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  var todayTime = today.getTime();
+
+  var numPoints = 60;
+  var points = [];
+  for (var i = 0; i <= numPoints; i++) {
+    var t = minTime + (maxTime - minTime) * (i / numPoints);
+    var planSum = 0;
+    var execSum = 0;
+    var hasExec = t <= todayTime;
+    parsed.forEach(function (p) {
+      var dur = p.fin - p.ini;
+      var frac;
+      if (dur <= 0) {
+        frac = t >= p.ini ? 1 : 0;
+      } else {
+        frac = (t - p.ini) / dur;
+        if (frac < 0) frac = 0;
+        if (frac > 1) frac = 1;
+      }
+      planSum += p.w * frac;
+      if (hasExec) {
+        execSum += p.w * Math.min(frac, p.pctReal);
+      }
+    });
+    points.push({ t: t, plan: Math.min(1, Math.max(0, planSum)), exec: hasExec ? Math.min(1, Math.max(0, execSum)) : null });
+  }
+
+  return { points: points, minTime: minTime, maxTime: maxTime, todayTime: todayTime };
+}
+
+function fmtAxisDate(t) {
+  var d = new Date(t);
+  var meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  return meses[d.getMonth()] + " " + d.getFullYear().toString().slice(2);
+}
+
+function renderSCurve(tasks) {
+  var data = buildSCurveData(tasks);
+  var container = document.getElementById("scurveContainer");
+  if (!data) {
+    container.innerHTML = '<div class="empty-state">No hay suficientes datos de fechas para graficar.</div>';
+    return;
+  }
+
+  var width = 560;
+  var height = 240;
+  var padL = 34;
+  var padR = 10;
+  var padT = 10;
+  var padB = 26;
+  var plotW = width - padL - padR;
+  var plotH = height - padT - padB;
+
+  function xForT(t) {
+    return padL + ((t - data.minTime) / (data.maxTime - data.minTime)) * plotW;
+  }
+  function yForPct(p) {
+    return padT + (1 - p) * plotH;
+  }
+
+  var planPath = "";
+  data.points.forEach(function (pt, i) {
+    var x = xForT(pt.t);
+    var y = yForPct(pt.plan);
+    planPath += (i === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+  });
+
+  var execPath = "";
+  var execStarted = false;
+  data.points.forEach(function (pt) {
+    if (pt.exec === null) return;
+    var x = xForT(pt.t);
+    var y = yForPct(pt.exec);
+    execPath += (!execStarted ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+    execStarted = true;
+  });
+
+  var todayClamped = Math.min(Math.max(data.todayTime, data.minTime), data.maxTime);
+  var todayX = xForT(todayClamped);
+
+  var gridLines = "";
+  [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
+    var y = yForPct(f);
+    gridLines += '<line x1="' + padL + '" y1="' + y + '" x2="' + (width - padR) + '" y2="' + y + '" stroke="#333844" stroke-width="1"/>';
+    gridLines += '<text x="' + (padL - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" fill="#9aa1ad">' + Math.round(f * 100) + "%</text>";
+  });
+
+  var dateLabels = "";
+  [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
+    var t = data.minTime + (data.maxTime - data.minTime) * f;
+    var x = xForT(t);
+    dateLabels += '<text x="' + x + '" y="' + (height - 6) + '" text-anchor="middle" font-size="10" fill="#9aa1ad">' + fmtAxisDate(t) + "</text>";
+  });
+
+  var svg = ""
+    + '<svg viewBox="0 0 ' + width + " " + height + '" style="width:100%; height:auto;">'
+    + gridLines
+    + '<line x1="' + todayX + '" y1="' + padT + '" x2="' + todayX + '" y2="' + (height - padB) + '" stroke="#ff7a1a" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>'
+    + '<path d="' + planPath.trim() + '" fill="none" stroke="#6b7280" stroke-width="2.5"/>'
+    + '<path d="' + execPath.trim() + '" fill="none" stroke="#ff7a1a" stroke-width="2.5"/>'
+    + dateLabels
+    + "</svg>";
+
+  container.innerHTML = svg;
+}
+
+function loadAll() {
+  Promise.all([
+    fetch(API_BASE + "/api/tasks").then(function (r) { return r.json(); }),
+    fetch(API_BASE + "/api/summary").then(function (r) { return r.json(); }),
+  ])
+    .then(function (results) {
+      var tasksData = results[0];
+      var summary = results[1];
+      allTasksGlobal = tasksData.tasks;
+
       renderDashboard(summary);
+      renderSemaforo(allTasksGlobal);
+      renderBars(summary);
+      renderRanking(summary);
+      renderSCurve(allTasksGlobal);
+
+      document.getElementById("extraSections").style.display = "block";
     })
     .catch(function () {
       document.getElementById("mainContent").innerHTML =
@@ -215,8 +533,8 @@ function loadSummary() {
     });
 }
 
-loadSummary();
-setInterval(loadSummary, 60000);
+loadAll();
+setInterval(loadAll, 60000);
 </script>
 
 </body>
