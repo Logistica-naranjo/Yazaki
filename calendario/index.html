@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YAZAKI · Calendario Preventivo · E4</title>
+<style>
+  :root{
+    --bg: #14161a;
+    --bg-elev: #1d2026;
+    --bg-elev-2: #262a32;
+    --border: #333844;
+    --text: #eef0f3;
+    --text-dim: #9aa1ad;
+    --orange: #ff7a1a;
+    --orange-soft: #ff9a4d;
+    --green: #35c77e;
+    --yellow: #e8c547;
+    --red: #ef4d4d;
+    --radius: 12px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+
+  header{
+    padding: 22px 28px 18px 28px; border-bottom:1px solid var(--border);
+    background: linear-gradient(180deg, #17191d 0%, #14161a 100%);
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .logo{
+    width:42px; height:42px; border-radius:10px; background:#ffffff;
+    display:flex; align-items:center; justify-content:center; padding:4px;
+  }
+  .logo img{ width:100%; height:100%; object-fit:contain; }
+  .brand-title{ font-size:19px; font-weight:800; letter-spacing:0.2px; }
+  .brand-sub{ font-size:12.5px; color:var(--text-dim); margin-top:2px; }
+  .status-pill{
+    font-size:11px; padding:4px 9px; border-radius:99px;
+    background: var(--bg-elev-2); color: var(--text-dim); border:1px solid var(--border);
+  }
+  .status-pill.ok{ color: var(--green); border-color: #2f7a54; }
+  .status-pill.err{ color: var(--red); border-color: #7a2f2f; }
+
+  main{ max-width: 1100px; margin: 0 auto; padding: 20px 20px 60px 20px; }
+
+  .card{ background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius); padding:18px; }
+
+  .controls-bar{
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;
+    margin-bottom:16px;
+  }
+  .view-tabs{ display:flex; gap:6px; background: var(--bg-elev); border:1px solid var(--border); border-radius:99px; padding:3px; }
+  .view-tab{
+    padding:7px 16px; border-radius:99px; font-size:12.5px; font-weight:700; cursor:pointer; color:var(--text-dim);
+    user-select:none;
+  }
+  .view-tab.active{ background: var(--orange); color:#1a1200; }
+
+  .nav-controls{ display:flex; align-items:center; gap:10px; }
+  .nav-btn{
+    width:32px; height:32px; border-radius:8px; background: var(--bg-elev); border:1px solid var(--border);
+    color: var(--text); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:15px; user-select:none;
+  }
+  .nav-btn:hover{ border-color: var(--orange); }
+  .today-btn{
+    padding:7px 14px; border-radius:8px; background: var(--bg-elev); border:1px solid var(--border);
+    color: var(--text); font-size:12px; font-weight:700; cursor:pointer;
+  }
+  .today-btn:hover{ border-color: var(--orange); }
+
+  .area-select{
+    padding:8px 10px; border-radius:8px; border:1px solid var(--border); background: var(--bg-elev);
+    color: var(--text); font-size:12.5px; max-width:220px;
+  }
+
+  .period-label{ font-size:17px; font-weight:800; margin-bottom:4px; }
+  .period-stats{ font-size:12px; color: var(--text-dim); margin-bottom:14px; }
+  .period-stats b.g{ color: var(--green); } .period-stats b.o{ color: var(--orange); }
+
+  .legend-row{ display:flex; gap:16px; margin-bottom:14px; font-size:11.5px; color:var(--text-dim); }
+  .legend-item{ display:flex; align-items:center; gap:6px; }
+  .legend-dot{ width:10px; height:10px; border-radius:3px; }
+  .legend-dot.green{ background: var(--green); } .legend-dot.orange{ background: var(--orange); }
+
+  /* Tarjetas de tarea */
+  .cal-section-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-dim); margin:12px 0 8px 0; font-weight:700; }
+  .cal-section-label:first-child{ margin-top:0; }
+  .cal-task-card{ background: var(--bg-elev-2); border-radius:8px; padding:9px 11px; margin-bottom:7px; position:relative; }
+  .cal-tag{ font-size:9.5px; font-weight:800; padding:2px 7px; border-radius:99px; display:inline-block; margin-bottom:4px; letter-spacing:0.3px; }
+  .cal-tag.inicia{ background:#35c77e22; color: var(--green); }
+  .cal-tag.finaliza{ background:#ff7a1a22; color: var(--orange); }
+  .cal-task-meta{ font-size:10px; color: var(--text-dim); text-transform:uppercase; letter-spacing:0.3px; }
+  .cal-task-name{ font-size:13px; font-weight:600; margin-top:1px; }
+
+  .empty-state{ text-align:center; color:var(--text-dim); padding: 22px 10px; font-size:12.5px; }
+  .loading{ text-align:center; color:var(--text-dim); padding: 60px 20px; font-size:13px; }
+
+  /* Vista dia */
+  .cal-day-panel{ }
+
+  /* Vista semana */
+  .week-grid{ display:grid; grid-template-columns: repeat(7, 1fr); gap:10px; }
+  @media (max-width: 900px){ .week-grid{ grid-template-columns: 1fr; } }
+  .week-day{ background: var(--bg-elev); border:1px solid var(--border); border-radius: var(--radius); padding:12px; min-height:90px; }
+  .week-day.today{ border-color: var(--orange); }
+  .week-day-header{ font-size:12px; font-weight:800; color: var(--text-dim); margin-bottom:8px; text-transform:uppercase; }
+  .week-day.today .week-day-header{ color: var(--orange); }
+
+  /* Vista mes */
+  .month-grid{ display:grid; grid-template-columns: repeat(7, 1fr); gap:6px; }
+  .month-dow{ text-align:center; font-size:11px; color:var(--text-dim); font-weight:700; padding-bottom:4px; text-transform:uppercase; }
+  .month-cell{
+    background: var(--bg-elev); border:1px solid var(--border); border-radius:8px; padding:6px; min-height:64px;
+    cursor:pointer; transition: border-color 0.12s;
+  }
+  .month-cell:hover{ border-color: var(--orange-soft); }
+  .month-cell.out{ opacity:0.35; }
+  .month-cell.today{ border-color: var(--orange); }
+  .month-cell.selected{ background: var(--bg-elev-2); border-color: var(--orange); box-shadow: 0 0 0 1px var(--orange) inset; }
+  .month-cell-num{ font-size:12px; font-weight:700; color: var(--text); }
+  .month-cell-dots{ display:flex; gap:4px; margin-top:6px; flex-wrap:wrap; }
+  .mc-dot{
+    font-size:9.5px; font-weight:800; padding:1px 5px; border-radius:99px; color:#0d0d0d;
+  }
+  .mc-dot.green{ background: var(--green); } .mc-dot.orange{ background: var(--orange-soft); }
+
+  .cal-day-panel-title{ font-size:13.5px; font-weight:800; margin-bottom:10px; }
+
+  footer{ text-align:center; padding: 24px; color: var(--text-dim); font-size:11.5px; border-top:1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAADSCAIAAAD7U9r4AAAPS0lEQVR42u2de3BW5Z3Hf79zfROSJgEiBAgiUEYYAwqFZQHTKip3A2odHWcVd1c7jumy9bYiCRIy2nVrW3pZrdXtVEudLs6YEO7CUBHKTaHIzQoIJcrNhEsIhPec85zn2T9sd9u1aJ6QkHPO+/0Mf/LOe97f+8nzfp9zfud3WClFACQFAyUAEBoACA0AhAYAQgMIDQCEBgBCAwChAYDQAEIDAKEBgNAAQGgAIDSA0ABAaAAgNAAQGgAIDSA0ABAaAAgNAIQGAEIDCA0AhAYAQgMAoQGA0ECfWIyptfA9gS9X2TsnjuySnx6gC2fJdo2ufc3ia43cKyA0iBlS+P67vwk3/0o1HCS/hZQiJrJc/kpP87oye9wDZm5hpA6YMfAcXNTmllPpN+eo9+uIiQyL+M8BVSlSUomAi4e633ze6l2SiUI3NTU1NjYyM0T5q19zpZi5d+/erutG68Bk0LLoEfXuG+ykiP72t6aCNBUNyfrnhWZeUcZFjoULFz766KOGgW3o3xB606ZNw4YNi9T+L73+Fbn9TePiNhMR2yl1dHew8VVj0pOcaUIHQeB5Hgy+mNYROhbiYN874eoFhmF+gc1/ctq0ww9Wq/Hl7ORE4egv33qJsBETODxV7y+uZP88sdmK/26o5gZ55lhEjh4BAPz/WOzVzeMT+8m0W7lQURiQ3wKhQfRsJvJ++1Pas4psJ6YfAUKDv9jn7F4u1r1ApvWl0RlCg6gjTuzz6+ZT4P/f+WYIDdqAZVmdezZTEcl0s1dbyafquZXRGUKDi1FYWNitW7fOPQbvre/RgfVku3EvJoTufEaMGNGzZ89OPAB/2xvyd6+R6SSgmBC6kzFN86GHHjJNs7MOQHyyM1j2DJGkRFwogNCdTHl5+cSJEzvr3WXLKa/mKW5uIMNMRj3RPtqZa3N5eflzzz3XWTtCKYW39Bl1eDvHPzpD6M77TTSMnJyc0aNHl5eXT5s2rbMOQxEFm14L31vEtpOk8kZX6HvvvXf69OkJ6wBRSuXk5AwYMKBfv36de6pOfLQxWPU8GxzfayhxEtp13YcffnjUqFFY0TuCsOmoV1vJ6aZknNmIwabQsizHcWBeh/xKCC9dN4+O702ezYSzHBlnM5G37iW1axlbbiI/IITOLIIP1oi1P2G2EhadIXQmrs2i8ZBfN5eDC5TcG+EgdMYI7Z/3FldywyGKefsRhAYkifzVC9QHa8lOJfuTQujMiM47asWGV9hK/okjCJ18xLE9wZJqDoVG+1EoSEkIDSJH2HLaq6mgs8fJbPVFNOHzNZOo73CSAkKDKEVnJf0Vz6mDmzXChgyooNiZVmkU9CIZQmgQpei89dfh1tc1rqEoqUzHnlphFRQrESBygCjZfPjdYMV/MFHro7MSgTnmfnvoVGwKQcQ2gs2fejUVfP5k6zv3VeDxwLHuTf8a60uIEDqBqDDwl1bTJ7uo9WFDCsovcsqqjFQuQWgQKfz1/yW312hsBJVUbNqTZttFQ+L+2SF04qLzvnXBmh+yYehEZ98YfY87/LYEfHwInSjC0/Xe4kryz2vc9Co87jcyNeGxWA9MgtCJy81EMriQrp1Lnx7QmH4kQ5XT3ZlexVkFyagDhE4ITOSt/ana+5bOWWelSNkTnrD7XJeY5mgInZTovGt5uO5nrHNXlRKeMeJOZ9TdSaoDhE5EdD6xz1syj0NPp/3Ip+JhqclPclJGzEDohCDTzenaSj79CRk60TkrzymrMnIKE1YNCB33vaDyVn1P7V9PGmedlVLSuvkRu9/fJa8gEDrWNpP33qJw02ts2a2/6VUJz7h2uvP39yXyLlkIHWPExzvE8mdZhRqnkEOfeg12pzxlJPTOQggd2+h8rtGrncPNDWS0unNfhcrNcadVmXm9kloWCB3PsCFDb/mzfHg76cyLUaE0b/i2/dXrE1wZCB3P6Lzpl+G2N7RspiDN10xwSx9IdnEgdAyj88GNYtX3mVjnrHOgCge4055O6gQwCB1bm88c8WsqKN2k0X6kpLKznGlPW137Jv7x1BA6VhvBIO0vqVLHPtC7xB0G1tcftIfcnAklgtBxis7+up/Jncv0niAhPL76RucbD3NmVAlCx4Zg71vit//JpqkxODQU1LVvqmy+4WQThAbRIWw86Nc9zcEFYp3obNnW1Aqze//MKRSEjkN09s6layv45B/1BoeKwBz7j07JFJVJtYLQ0Y/OylvzI/nh22RpDA5VwqOBY93xs5iYITSIDv6OxeGGV/RaL6SgvCJ3+nyO+UwCCJ2wtZmCo7vF0mqWQqP96LOZBJNnWz0Hc+YVDUJHWOgLZ/zaCmo6ptF+RKSEb46+xxl+e2YWDUJH1WYlvRX/Tge36LUfCY+vGulOeJyJITSIUnTesjDc8rpe+5EUlFPols03svIztm4QOooEh7bqDg4lpRSxPfEJq8+1mVw6CB05wrPH/do5fOEU6dyPrYRnfu1OZ+RdGV49CB0tZBh4S6vVkd1kajVs+Fw8zJ30bwmbSZAooU0zE78bf8PLcsdivfYjGarsfLesOnkzCdqAFc3D8jzv8ccfLygoUEq1+e/BuLzPS5VS3nHHHTNmzGi7zfveFmsWMBs6zy1WSknrlu9Y/UbC5ugKLYRYtWpV7KpZUlLS9o98qj6oncveedLqdQ58Y8Rtzuj7FGXqiTpk6I6jR48ebXuhCi54i+fSp/tJs3Ofiwa7k+cYpg2bIXT7061bt7a9ML32x2rvW6QVnZUkt4tTVmXmFaHyELr9cV23qKgtbvk7l4brfs6moxedZWjf+G174DhUHkJ3CH369Bk0aJB2dD7xob+kioWn1+YZ+MY1E+3rH0TZIXRHccMNN+Tl5Wm9RKabvJo5fPqIXud+GKgr+rtT5xqWQ6RQeQjd/liWdffdepPDlZLequfpwEbd6KzslHPrPLNrXyLCuQ0I3SGMHz++tLRULzq/tyjc9JrGGNzP/grCwPr6t+yrb0LNIXRHkZeXN3/+fMvSOKkffPz7YPl3WUm96Cw8Hjw+c2YSQOjOObmxYMGCUaNGaWTgc41+TQWfa9Dq3KdQqK5Xpm6dlzkzCSD05SY/P//FF1+cOXNmaxMDKSkDf9mzql5vcCgpqUzbnlphdB+AskPoDiicYZSWli5btuz+++/XeR37G18Nty3SHZqowsAc909OyVSEjS/ZnaMEF1WP2bIs27Ydx3FdN5VKZWVl5efnFxcXl5SUjBkzZty4ca6r56X46Hdi1Q+YDe3oPHCcc9O/wOa4Cu267ty5c/v37x+GYQe9hW3bf7ncfrals23bNE3bti3LMk3T+TPZ2dlZWVm5ubnZ2W3Pr+GZI35NBXtNWg0bJIXMK0qVVZluLnyNq9CWZc2YMWPw4MHJqLIiUsLz6ubR8T+QndJ5pVJsOpOfsnsOhqzxztCe5yWp0P7bL8hdy/VsJiLhmaPvcYffBlOxKYzO6vy/g0P1fg+V8FS/kc4tj+FyIISO0N5SNBzw6+ZSkNaYfkREMqScwtT0aiO7AEWE0JFZn71mv7aSGutZq/1IKUVkTXzC6jMMizOEjlDaSK9eID9cp3fT62fR+Wt3uqPuQg0hdIQIfv9muOEXbGk+s1X4qvg6Z/KTzCZqCKGjgji6K1hazSrQjc4qO98tqzK7dEcNIXRUkkbYctqrqVBnT5ChtTwrpaR18yOYSQCho4QMvRXfVYe2aj/lMvDM66a7Y+5FCdsMejnaH3/rr+XW32jbHPpUNMSZXMGGjRpihY7MRvCP+oNDiUiFys21y6rMvJ6oIYSOTNY4e8KvmUMtp0lvaKIixdbN33EiNZNA6rSFRWZIJCJH++0FQz+9pEod2aN91jkUfOVwe1CpbPiozbP82nWVM+TpT9TRPa26oYaZ/BZxeBsXFPMX/ygZpuF0gdCxObPhrX9Zvl/HtqP9YtOSx/ddeOF2UpGZSRD6LEXr1l1mIrHsmXDjq2RaXzBVgU2L84qMgeOsoZPN3B4QOtrR+Q9rxZofsWG0qZGIWaQjZDMREWucPmdm4dOJ/URfNDJSkZIf7wh3rwg2vGKPn+WM+CZ3wCMUIXR7LGdnjgR189jXGxz6OYHi3LXBTK3oJfzTJzxZH7zxqGw85N7ymNHe4RubwktPG8p/+0WlOTg0ozEtZiNc+5Pg3f9u918lCH2piIYD8v3Fes10gA0mEu/8XJ4/CaEjljcObVHNjWSgkUh3nbZV40F5dA+Ejhay6RgmJra1dqE6XQ+ho/bjacPntm6EiYQPoaOF0bUvmxYW6bZsp4lUe98uCaEvOQpeNYJyryApUYpIrC8owaVWsOBKY/jtKgxQCgidkCDofuMhY8BY5V9ANSB0IorYpat71w/56huVSFMYkFKx/9eGLUEb36idwaXv9tncGAXFWfe9HGx5PXhvEZ08zKFQFN9UzRwKMozWt3OoMGDDImal9ZfQARf7IXT7pA4iYqeLe/0D9qi75clD1HRCr584Wp/HkKfqg7U/ppYzrXFaSWEOu9UedisZhtaiq5TkosEQOtrxw80xepVQr5K4fxCx/x21d/WXT2VXkuwsu/RBq/haZGgQYVp/T6RhkhEVkSA0aJdthILQAEBoACA0gNAAQGgAIDQAEBoACA0gNAAQGgAI/dcEQdDS0oKvB+gS0W473/erq6snTJggM/tePcuyCgsLhw4dOmTIEGY84S22QhPRypUrV65ciW+IiHJzc8eOHTt79uzS0lJUAxk69jQ3N69cuXLKlCkvvfQSqgGhE8K5c+dmzZq1ZMkSlAJCJwTP8yorK8+ePYtSQOiEsHPnzs2bN6MOEDohKKW2b9+OOkDo5NDQ0BCp4+EoPUwDQsePMIzWgATFht7zzCE0iHIGYjebc7pDaJAIn0PBvYaYX+kBoUECdJZkOdbof0DkAEmwWQnfGjvTvnp8Jm4KJUaCJ2ZTqCQJTykyS7/lTHySOULL4uVrTurWrdugQYPQMnbp60JRUdFleaeQwuDzWUIRUyrH6F1ij5lpl0xiitYXypftaenpdLqlpQVCX/JJBZVKpbKzszv2XYhE/TZqOvE5oRXZKc7vZRReZRhRfNDo5RMaAGwKAYDQAEIDAKEBgNAAQGgAIDSA0ABAaAAgNAAQGgAIDSA0ABAaAAgNAIQGAEIDCA0AhAYAQgMAoQGA0ABCAwChAYDQAEBoACA0gNAAQGgAIDQAEBoACA0gNAAQGgAIDQCEBhAaAAgNAIQGoKP5H69x32NYsh5VAAAAAElFTkSuQmCC" alt="E4"></div>
+    <div>
+      <div class="brand-title">YAZAKI &middot; Calendario Preventivo</div>
+      <div class="brand-sub">Constructora E4 SA</div>
+    </div>
+  </div>
+  <div class="status-pill" id="connStatus">conectando...</div>
+</header>
+
+<main>
+  <div id="controlsAndContent">
+    <div class="loading">Cargando cronograma...</div>
+  </div>
+</main>
+
+<footer>Constructora E4 SA &middot; Sistema de monitoreo YAZAKI</footer>
+
+<script>
+// ============================================================
+// CONFIGURACION: URL del Worker (misma que las otras 2 apps)
+// ============================================================
+var API_BASE = "https://yazaki.juanfernando-solares.workers.dev";
+
+var allTasks = [];
+var currentView = "semana"; // dia | semana | mes
+var currentDate = new Date();
+var selectedDayStr = null;
+var activeAreaFilter = "TODAS";
+
+var MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+var MESES_CORTOS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+var DIAS_SEMANA = ["Lun","Mar","Mie","Jue","Vie","Sab","Dom"];
+var DIAS_SEMANA_LARGO = ["Lunes","Martes","Miercoles","Jueves","Viernes","Sabado","Domingo"];
+
+function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+
+function toISODate(d) {
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+}
+
+function dateFromISO(s) {
+  var parts = s.split("-");
+  return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+}
+
+function fmtFullDateFromStr(s) {
+  var d = dateFromISO(s);
+  var dow = d.getDay();
+  var dowIdx = dow === 0 ? 6 : dow - 1;
+  return DIAS_SEMANA_LARGO[dowIdx] + " " + d.getDate() + " de " + MESES[d.getMonth()] + " de " + d.getFullYear();
+}
+
+function mondayOf(date) {
+  var d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  var day = d.getDay();
+  var diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function firstGridDay(date) {
+  var first = new Date(date.getFullYear(), date.getMonth(), 1);
+  return mondayOf(first);
+}
+
+function shiftDate(view, date, dir) {
+  var d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  if (view === "dia") d.setDate(d.getDate() + dir);
+  else if (view === "semana") d.setDate(d.getDate() + dir * 7);
+  else d.setMonth(d.getMonth() + dir);
+  return d;
+}
+
+function filteredTasks() {
+  return allTasks.filter(function (t) {
+    if (t.resumen) return false;
+    if (activeAreaFilter !== "TODAS" && t.area !== activeAreaFilter) return false;
+    return true;
+  });
+}
+
+function countInRange(startStr, endStr) {
+  var tasks = filteredTasks();
+  var starting = tasks.filter(function (t) { return t.inicio >= startStr && t.inicio <= endStr; }).length;
+  var ending = tasks.filter(function (t) { return t.fin >= startStr && t.fin <= endStr; }).length;
+  return { starting: starting, ending: ending };
+}
+
+function taskCardHtml(t, tag) {
+  var actLabel = t.actividad ? t.actividad : t.proceso;
+  var html = '<div class="cal-task-card">';
+  html += '  <span class="cal-tag ' + tag + '">' + (tag === "inicia" ? "INICIA" : "FINALIZA") + "</span>";
+  html += '  <div class="cal-task-meta">' + t.area + " &middot; " + actLabel + "</div>";
+  html += '  <div class="cal-task-name">' + t.nombre + "</div>";
+  html += "</div>";
+  return html;
+}
+
+function renderDayDetail(dateStr) {
+  var tasks = filteredTasks();
+  var starting = tasks.filter(function (t) { return t.inicio === dateStr; });
+  var ending = tasks.filter(function (t) { return t.fin === dateStr; });
+  var html = "";
+  if (starting.length === 0 && ending.length === 0) {
+    return '<div class="empty-state">No hay actividades que inicien o finalicen este dia.</div>';
+  }
+  if (starting.length) {
+    html += '<div class="cal-section-label">Inician (' + starting.length + ")</div>";
+    starting.forEach(function (t) { html += taskCardHtml(t, "inicia"); });
+  }
+  if (ending.length) {
+    html += '<div class="cal-section-label">Finalizan (' + ending.length + ")</div>";
+    ending.forEach(function (t) { html += taskCardHtml(t, "finaliza"); });
+  }
+  return html;
+}
+
+function buildControlsHtml() {
+  var areas = [];
+  var seen = {};
+  allTasks.forEach(function (t) {
+    if (!t.resumen && !seen[t.area]) { seen[t.area] = true; areas.push(t.area); }
+  });
+
+  var html = '<div class="controls-bar">';
+  html += '  <div class="view-tabs">';
+  html += '    <div class="view-tab' + (currentView === "dia" ? " active" : "") + '" data-view="dia">Dia</div>';
+  html += '    <div class="view-tab' + (currentView === "semana" ? " active" : "") + '" data-view="semana">Semana</div>';
+  html += '    <div class="view-tab' + (currentView === "mes" ? " active" : "") + '" data-view="mes">Mes</div>';
+  html += "  </div>";
+  html += '  <div class="nav-controls">';
+  html += '    <div class="nav-btn" id="navPrev">&larr;</div>';
+  html += '    <div class="today-btn" id="navToday">Hoy</div>';
+  html += '    <div class="nav-btn" id="navNext">&rarr;</div>';
+  html += "  </div>";
+  html += '  <select class="area-select" id="areaSelect">';
+  html += '    <option value="TODAS">Todas las areas</option>';
+  areas.forEach(function (a) {
+    html += '<option value="' + a + '"' + (activeAreaFilter === a ? " selected" : "") + ">" + a + "</option>";
+  });
+  html += "  </select>";
+  html += "</div>";
+
+  html += '<div class="legend-row">';
+  html += '  <div class="legend-item"><span class="legend-dot green"></span>Inicia</div>';
+  html += '  <div class="legend-item"><span class="legend-dot orange"></span>Finaliza</div>';
+  html += "</div>";
+
+  return html;
+}
+
+function attachControlsListeners() {
+  Array.prototype.forEach.call(document.querySelectorAll(".view-tab"), function (tab) {
+    tab.addEventListener("click", function () {
+      currentView = tab.getAttribute("data-view");
+      if (currentView === "mes") selectedDayStr = null;
+      render();
+    });
+  });
+  document.getElementById("navPrev").addEventListener("click", function () {
+    currentDate = shiftDate(currentView, currentDate, -1);
+    render();
+  });
+  document.getElementById("navNext").addEventListener("click", function () {
+    currentDate = shiftDate(currentView, currentDate, 1);
+    render();
+  });
+  document.getElementById("navToday").addEventListener("click", function () {
+    currentDate = new Date();
+    selectedDayStr = toISODate(new Date());
+    render();
+  });
+  document.getElementById("areaSelect").addEventListener("change", function (e) {
+    activeAreaFilter = e.target.value;
+    render();
+  });
+}
+
+function renderDia() {
+  var dateStr = toISODate(currentDate);
+  var stats = countInRange(dateStr, dateStr);
+
+  var html = buildControlsHtml();
+  html += '<div class="period-label">' + fmtFullDateFromStr(dateStr) + "</div>";
+  html += '<div class="period-stats"><b class="g">' + stats.starting + "</b> inician &middot; <b class=\"o\">" + stats.ending + "</b> finalizan</div>";
+  html += '<div class="card cal-day-panel">' + renderDayDetail(dateStr) + "</div>";
+
+  document.getElementById("controlsAndContent").innerHTML = html;
+  attachControlsListeners();
+}
+
+function renderSemana() {
+  var monday = mondayOf(currentDate);
+  var sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+  var mondayStr = toISODate(monday);
+  var sundayStr = toISODate(sunday);
+  var stats = countInRange(mondayStr, sundayStr);
+
+  var rangeLabel;
+  if (monday.getMonth() === sunday.getMonth()) {
+    rangeLabel = monday.getDate() + " - " + sunday.getDate() + " de " + MESES[monday.getMonth()] + " " + monday.getFullYear();
+  } else {
+    rangeLabel = monday.getDate() + " " + MESES_CORTOS[monday.getMonth()] + " - " + sunday.getDate() + " " + MESES_CORTOS[sunday.getMonth()] + " " + sunday.getFullYear();
+  }
+
+  var html = buildControlsHtml();
+  html += '<div class="period-label">Semana del ' + rangeLabel + "</div>";
+  html += '<div class="period-stats"><b class="g">' + stats.starting + "</b> inician esta semana &middot; <b class=\"o\">" + stats.ending + "</b> finalizan esta semana</div>";
+
+  html += '<div class="week-grid">';
+  var todayStr = toISODate(new Date());
+  for (var i = 0; i < 7; i++) {
+    var d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+    var dStr = toISODate(d);
+    var isToday = dStr === todayStr;
+    html += '<div class="week-day' + (isToday ? " today" : "") + '">';
+    html += '  <div class="week-day-header">' + DIAS_SEMANA[i] + " " + d.getDate() + " " + MESES_CORTOS[d.getMonth()] + "</div>";
+    html += renderDayDetail(dStr);
+    html += "</div>";
+  }
+  html += "</div>";
+
+  document.getElementById("controlsAndContent").innerHTML = html;
+  attachControlsListeners();
+}
+
+function renderMes() {
+  var gridStart = firstGridDay(currentDate);
+  var monthIdx = currentDate.getMonth();
+  var firstOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+  var lastOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+  var stats = countInRange(toISODate(firstOfMonth), toISODate(lastOfMonth));
+
+  var html = buildControlsHtml();
+  html += '<div class="period-label">' + MESES[monthIdx] + " " + currentDate.getFullYear() + "</div>";
+  html += '<div class="period-stats"><b class="g">' + stats.starting + "</b> inician este mes &middot; <b class=\"o\">" + stats.ending + "</b> finalizan este mes</div>";
+
+  html += '<div class="month-grid">';
+  DIAS_SEMANA.forEach(function (d) { html += '<div class="month-dow">' + d + "</div>"; });
+
+  var todayStr = toISODate(new Date());
+  if (!selectedDayStr) selectedDayStr = todayStr;
+
+  for (var i = 0; i < 42; i++) {
+    var d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
+    var dStr = toISODate(d);
+    var inMonth = d.getMonth() === monthIdx;
+    var tasks = filteredTasks();
+    var startingCount = tasks.filter(function (t) { return t.inicio === dStr; }).length;
+    var endingCount = tasks.filter(function (t) { return t.fin === dStr; }).length;
+    var isToday = dStr === todayStr;
+    var isSelected = dStr === selectedDayStr;
+
+    html += '<div class="month-cell' + (inMonth ? "" : " out") + (isToday ? " today" : "") + (isSelected ? " selected" : "") + '" data-date="' + dStr + '">';
+    html += '  <div class="month-cell-num">' + d.getDate() + "</div>";
+    if (startingCount > 0 || endingCount > 0) {
+      html += '  <div class="month-cell-dots">';
+      if (startingCount > 0) html += '<span class="mc-dot green">' + startingCount + "</span>";
+      if (endingCount > 0) html += '<span class="mc-dot orange">' + endingCount + "</span>";
+      html += "  </div>";
+    }
+    html += "</div>";
+  }
+  html += "</div>";
+
+  html += '<div class="card cal-day-panel" style="margin-top:14px;">';
+  html += '<div class="cal-day-panel-title">' + fmtFullDateFromStr(selectedDayStr) + "</div>";
+  html += renderDayDetail(selectedDayStr);
+  html += "</div>";
+
+  document.getElementById("controlsAndContent").innerHTML = html;
+  attachControlsListeners();
+
+  Array.prototype.forEach.call(document.querySelectorAll(".month-cell"), function (cell) {
+    cell.addEventListener("click", function () {
+      selectedDayStr = cell.getAttribute("data-date");
+      renderMes();
+    });
+  });
+}
+
+function render() {
+  if (currentView === "dia") renderDia();
+  else if (currentView === "semana") renderSemana();
+  else renderMes();
+}
+
+function setConnStatus(ok, msg) {
+  var el = document.getElementById("connStatus");
+  el.textContent = msg;
+  el.className = "status-pill " + (ok ? "ok" : "err");
+}
+
+function loadTasks() {
+  setConnStatus(false, "conectando...");
+  fetch(API_BASE + "/api/tasks")
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      allTasks = data.tasks;
+      setConnStatus(true, "en linea");
+      render();
+    })
+    .catch(function () {
+      setConnStatus(false, "sin conexion");
+      document.getElementById("controlsAndContent").innerHTML =
+        '<div class="empty-state">No se pudo conectar al servidor.<br>Revisa tu conexion e intenta de nuevo.</div>';
+    });
+}
+
+loadTasks();
+setInterval(loadTasks, 120000);
+</script>
+
+</body>
+</html>
