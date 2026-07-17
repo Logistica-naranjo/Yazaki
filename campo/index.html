@@ -295,7 +295,7 @@ function renderList() {
       + '      <div class="progress-fill" style="width:' + Math.round(t.pctReal * 100) + '%"></div>'
       + '      <div class="progress-plan-marker" style="left:' + Math.round(t.pctPlan * 100) + '%"></div>'
       + '    </div>'
-      + '    <div class="progress-labels"><span>Real: ' + fmtPct(t.pctReal) + '</span><span>Plan: ' + fmtPct(t.pctPlan) + '</span></div>'
+      + '    <div class="progress-labels"><span>Real: ' + fmtPct(t.pctReal) + '</span><span>Esperado: ' + fmtPct(t.pctPlan) + '</span></div>'
       + '  </div>'
       + '  <div class="edit-row">'
       + '    <input type="range" min="0" max="100" step="1" value="' + Math.round(t.pctReal * 100) + '" class="range-input">'
@@ -356,7 +356,7 @@ function renderSummary() {
   var pctReal = allTasks.reduce(function (a, t) { return a + t.pctReal * t.dur; }, 0) / totalDur;
   var pctPlan = allTasks.reduce(function (a, t) { return a + t.pctPlan * t.dur; }, 0) / totalDur;
   document.getElementById("summaryBar").innerHTML =
-    'Avance filtrado: <b>' + fmtPct(pctReal) + '</b> real vs <b>' + fmtPct(pctPlan) + '</b> plan &middot; ' + allTasks.length + ' tareas totales';
+    'Avance filtrado: <b>' + fmtPct(pctReal) + '</b> real vs <b>' + fmtPct(pctPlan) + '</b> esperado &middot; ' + allTasks.length + ' tareas totales';
 }
 
 document.getElementById("searchInput").addEventListener("input", function (e) {

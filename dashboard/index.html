@@ -162,7 +162,7 @@
     <h2 class="section-title" style="margin-top:6px;">Semaforo de actividades</h2>
     <div class="semaforo-grid" id="semaforoGrid"></div>
     <div class="sem-table-wrap">
-      <table id="semTable"><thead><tr><th>Area</th><th>Proceso</th><th>Actividad</th><th class="num">Plan</th><th class="num">Real</th><th>Estado</th></tr></thead><tbody id="semTableBody"></tbody></table>
+      <table id="semTable"><thead><tr><th>Area</th><th>Proceso</th><th>Actividad</th><th class="num">Esperado</th><th class="num">Real</th><th>Estado</th></tr></thead><tbody id="semTableBody"></tbody></table>
       <div class="sem-table-empty" id="semTableEmpty" style="display:none;">No hay actividades en este estado.</div>
     </div>
 
@@ -229,7 +229,7 @@ function renderDashboard(summary) {
   html += '      <div class="hero-fill" style="width:' + Math.round(g.pctReal * 100) + '%"></div>';
   html += '      <div class="hero-plan-marker" style="left:' + Math.round(g.pctPlan * 100) + '%"></div>';
   html += '    </div>';
-  html += '    <div class="hero-legend"><span>Plan: ' + fmtPct(g.pctPlan) + '</span><span>Real: ' + fmtPct(g.pctReal) + '</span></div>';
+  html += '    <div class="hero-legend"><span>Esperado: ' + fmtPct(g.pctPlan) + '</span><span>Real: ' + fmtPct(g.pctReal) + '</span></div>';
   html += '  </div>';
 
   html += '  <div class="card">';
@@ -254,7 +254,7 @@ function renderDashboard(summary) {
     html += '      <div class="area-fill" style="width:' + Math.round(a.pctReal * 100) + '%"></div>';
     html += '      <div class="area-plan-marker" style="left:' + Math.round(a.pctPlan * 100) + '%"></div>';
     html += '    </div>';
-    html += '    <div class="area-numbers"><span>Plan ' + fmtPct(a.pctPlan) + '</span><span>Real ' + fmtPct(a.pctReal) + '</span></div>';
+    html += '    <div class="area-numbers"><span>Esperado ' + fmtPct(a.pctPlan) + '</span><span>Real ' + fmtPct(a.pctReal) + '</span></div>';
     html += '    <div class="area-badge ' + st.cls + '">' + st.label + '</div>';
     html += '  </div>';
   });
@@ -262,7 +262,7 @@ function renderDashboard(summary) {
 
   html += '<h2 class="section-title">Detalle por proceso</h2>';
   html += '<div class="card" style="padding:6px 16px 12px 16px;">';
-  html += '<table><thead><tr><th>Area</th><th>Proceso</th><th class="num">Plan</th><th class="num">Real</th><th class="num">Desviacion</th><th>Estado</th></tr></thead><tbody>';
+  html += '<table><thead><tr><th>Area</th><th>Proceso</th><th class="num">Esperado</th><th class="num">Real</th><th class="num">Desviacion</th><th>Estado</th></tr></thead><tbody>';
   summary.procesos.forEach(function (p) {
     var st = statusFromDeviation(p.desviacion);
     html += '<tr>';
