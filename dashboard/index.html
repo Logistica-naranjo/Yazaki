@@ -15,6 +15,7 @@
     --orange: #ff7a1a;
     --orange-soft: #ff9a4d;
     --green: #35c77e;
+    --supergreen: #00e676;
     --yellow: #e8c547;
     --red: #ef4d4d;
     --radius: 12px;
@@ -85,12 +86,27 @@
   tr:hover td{ background: var(--bg-elev-2); }
   .mini-badge{ font-size:10px; font-weight:700; padding:2px 7px; border-radius:99px; }
   .mini-badge.green{ background:#35c77e22; color:var(--green); }
+  .mini-badge.supergreen{ background:#00e67630; color:var(--supergreen); box-shadow: 0 0 5px #00e67655; }
   .mini-badge.yellow{ background:#e8c54722; color:var(--yellow); }
   .mini-badge.red{ background:#ef4d4d22; color:var(--red); }
+  .mini-badge.grey{ background:#8a919c22; color:#a7adb6; }
 
   .loading, .empty-state{ text-align:center; color:var(--text-dim); padding: 60px 20px; font-size:13px; }
 
   footer{ text-align:center; padding: 24px; color: var(--text-dim); font-size:11.5px; border-top:1px solid var(--border); }
+
+  /* ===== Pestanas ===== */
+  .tabs-bar{
+    display:flex; gap:6px; background: var(--bg-elev); border:1px solid var(--border); border-radius:99px;
+    padding:4px; margin-bottom:20px; width:fit-content; max-width:100%; overflow-x:auto;
+  }
+  .tab-btn{
+    padding:9px 18px; border-radius:99px; font-size:12.5px; font-weight:700; cursor:pointer;
+    color:var(--text-dim); user-select:none; white-space:nowrap;
+  }
+  .tab-btn.active{ background: var(--orange); color:#1a1200; }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
 
   /* ===== Semaforo ===== */
   .semaforo-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:14px; }
@@ -103,6 +119,7 @@
   .sem-dot{ width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:7px; }
   .sem-dot.red{ background: var(--red); } .sem-dot.yellow{ background: var(--yellow); }
   .sem-dot.green{ background: var(--green); } .sem-dot.grey{ background: #8a919c; }
+  .sem-dot.supergreen{ background: var(--supergreen); box-shadow: 0 0 6px var(--supergreen); }
   .sem-label{ font-size:12.5px; color: var(--text-dim); font-weight:600; }
   .sem-count{ font-size:30px; font-weight:800; margin-top:6px; }
   .sem-pct{ font-size:11.5px; color: var(--text-dim); margin-top:2px; }
@@ -152,21 +169,14 @@
   <div class="updated-tag" id="updatedTag">Cargando...</div>
 </header>
 
-<main id="mainContent">
-  <div class="loading">Cargando informacion del proyecto...</div>
-</main>
+<main>
+  <div class="tabs-bar">
+    <div class="tab-btn active" data-tab="resumen">Resumen visual</div>
+    <div class="tab-btn" data-tab="general">Avance general</div>
+    <div class="tab-btn" data-tab="semaforo">Semaforo de actividades</div>
+  </div>
 
-<div id="extraSections" style="display:none;">
-  <main style="padding-top:0;">
-
-    <h2 class="section-title" style="margin-top:6px;">Semaforo de actividades</h2>
-    <div class="semaforo-grid" id="semaforoGrid"></div>
-    <div class="sem-table-wrap">
-      <table id="semTable"><thead><tr><th>Area</th><th>Proceso</th><th>Actividad</th><th class="num">Esperado</th><th class="num">Real</th><th>Estado</th></tr></thead><tbody id="semTableBody"></tbody></table>
-      <div class="sem-table-empty" id="semTableEmpty" style="display:none;">No hay actividades en este estado.</div>
-    </div>
-
-    <h2 class="section-title">Resumen visual</h2>
+  <div class="tab-panel active" data-panel="resumen" id="tabResumen">
     <div class="viz-grid">
       <div class="card">
         <div class="label" style="font-size:12.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.6px;">Curva S: planificado vs ejecutado</div>
@@ -174,7 +184,7 @@
           <div class="legend-item"><span class="legend-swatch" style="background:#6b7280;"></span>Planificado (proyecto completo)</div>
           <div class="legend-item"><span class="legend-swatch" style="background:var(--orange);"></span>Ejecutado (a la fecha)</div>
         </div>
-        <div id="scurveContainer"></div>
+        <div id="scurveContainer"><div class="loading">Cargando...</div></div>
       </div>
       <div class="card">
         <div class="label" style="font-size:12.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:10px;">Avance por area</div>
@@ -186,10 +196,22 @@
       <div class="label" style="font-size:12.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:10px;">Ranking de areas por avance</div>
       <div class="ranking-list" id="rankingList"></div>
     </div>
+  </div>
 
-  </main>
-</div>
+  <div class="tab-panel" data-panel="general" id="tabGeneral">
+    <div id="mainContent">
+      <div class="loading">Cargando informacion del proyecto...</div>
+    </div>
+  </div>
 
+  <div class="tab-panel" data-panel="semaforo" id="tabSemaforo">
+    <div class="semaforo-grid" id="semaforoGrid"></div>
+    <div class="sem-table-wrap">
+      <table id="semTable"><thead><tr><th>Area</th><th>Proceso</th><th>Actividad</th><th class="num">Esperado</th><th class="num">Real</th><th>Estado</th></tr></thead><tbody id="semTableBody"></tbody></table>
+      <div class="sem-table-empty" id="semTableEmpty" style="display:none;">No hay actividades en este estado.</div>
+    </div>
+  </div>
+</main>
 
 <footer>Constructora E4 SA &middot; Sistema de monitoreo YAZAKI</footer>
 
@@ -289,6 +311,7 @@ function taskStatus(t) {
     return { key: "no_iniciada", cls: "grey", label: "No iniciada" };
   }
   var desv = t.pctReal - t.pctPlan;
+  if (desv > 0.05) return { key: "adelantada", cls: "supergreen", label: "Adelantado" };
   if (desv >= 0) return { key: "al_dia", cls: "green", label: "Al dia" };
   if (desv >= -0.05) return { key: "en_riesgo", cls: "yellow", label: "En riesgo" };
   return { key: "atrasada", cls: "red", label: "Atrasada" };
@@ -299,7 +322,7 @@ var activeSemFilter = "todos";
 
 function renderSemaforo(tasks) {
   var leaf = tasks.filter(function (t) { return !t.resumen; });
-  var counts = { no_iniciada: 0, atrasada: 0, en_riesgo: 0, al_dia: 0 };
+  var counts = { no_iniciada: 0, atrasada: 0, en_riesgo: 0, al_dia: 0, adelantada: 0 };
   var statusMap = {};
   leaf.forEach(function (t) {
     var st = taskStatus(t);
@@ -312,6 +335,7 @@ function renderSemaforo(tasks) {
     { key: "atrasada", cls: "red", label: "Atrasadas" },
     { key: "en_riesgo", cls: "yellow", label: "En riesgo" },
     { key: "al_dia", cls: "green", label: "Al dia" },
+    { key: "adelantada", cls: "supergreen", label: "Adelantadas" },
     { key: "no_iniciada", cls: "grey", label: "No iniciadas" },
   ];
   var cardsHtml = "";
@@ -523,8 +547,6 @@ function loadAll() {
       renderBars(summary);
       renderRanking(summary);
       renderSCurve(allTasksGlobal);
-
-      document.getElementById("extraSections").style.display = "block";
     })
     .catch(function () {
       document.getElementById("mainContent").innerHTML =
@@ -533,6 +555,28 @@ function loadAll() {
     });
 }
 
+var activeTab = "resumen";
+
+function applyTabState() {
+  Array.prototype.forEach.call(document.querySelectorAll(".tab-btn"), function (btn) {
+    btn.className = btn.getAttribute("data-tab") === activeTab ? "tab-btn active" : "tab-btn";
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".tab-panel"), function (panel) {
+    panel.className = panel.getAttribute("data-panel") === activeTab ? "tab-panel active" : "tab-panel";
+  });
+}
+
+function initTabs() {
+  Array.prototype.forEach.call(document.querySelectorAll(".tab-btn"), function (btn) {
+    btn.addEventListener("click", function () {
+      activeTab = btn.getAttribute("data-tab");
+      applyTabState();
+    });
+  });
+  applyTabState();
+}
+
+initTabs();
 loadAll();
 setInterval(loadAll, 60000);
 </script>
