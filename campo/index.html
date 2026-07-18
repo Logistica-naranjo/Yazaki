@@ -71,6 +71,12 @@
   }
   .summary-bar b{ color: var(--text); font-size: 13px; }
 
+  .last-update-bar{
+    margin: 0 16px 10px 16px; padding: 8px 12px; border-radius: var(--radius);
+    background: var(--bg-elev-2); font-size:11.5px; color: var(--text-dim);
+  }
+  .last-update-bar b{ color: var(--orange); }
+
   .list{ padding: 4px 16px 16px 16px; display:flex; flex-direction:column; gap:10px; }
 
   .task-card{
@@ -147,6 +153,7 @@
 </div>
 
 <div class="summary-bar" id="summaryBar">Cargando resumen...</div>
+<div class="last-update-bar" id="lastUpdateBar"></div>
 
 <div class="list" id="taskList">
   <div class="loading">Cargando cronograma...</div>
@@ -193,6 +200,7 @@ function fetchTasks() {
       renderFilters();
       renderList();
       renderSummary();
+      renderLastUpdate();
     })
     .catch(function (err) {
       setConnStatus(false, "sin conexion");
@@ -335,9 +343,14 @@ function renderList() {
               btn.className = "save-btn";
             }, 1500);
             var task = allTasks.find(function (t) { return t.id === id; });
-            if (task) task.pctReal = val / 100;
+            if (task) {
+              task.pctReal = val / 100;
+              task.updatedBy = resp.state ? resp.state.updatedBy : supervisorName;
+              task.updatedAt = resp.state ? resp.state.updatedAt : new Date().toISOString();
+            }
             renderList();
             renderSummary();
+            renderLastUpdate();
           } else {
             btn.textContent = "Error, reintentar";
           }
@@ -357,6 +370,32 @@ function renderSummary() {
   var pctPlan = allTasks.reduce(function (a, t) { return a + t.pctPlan * t.dur; }, 0) / totalDur;
   document.getElementById("summaryBar").innerHTML =
     'Avance filtrado: <b>' + fmtPct(pctReal) + '</b> real vs <b>' + fmtPct(pctPlan) + '</b> esperado &middot; ' + allTasks.length + ' tareas totales';
+}
+
+function fmtRelativeOrDate(iso) {
+  var d = new Date(iso);
+  var now = new Date();
+  var diffMin = Math.floor((now - d) / 60000);
+  if (diffMin < 1) return "hace un momento";
+  if (diffMin < 60) return "hace " + diffMin + " min";
+  var diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return "hace " + diffH + "h";
+  var diffD = Math.floor(diffH / 24);
+  if (diffD < 7) return "hace " + diffD + " dia" + (diffD > 1 ? "s" : "");
+  return d.toLocaleDateString("es-GT") + " " + d.toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" });
+}
+
+function renderLastUpdate() {
+  var el = document.getElementById("lastUpdateBar");
+  var withUpdate = allTasks.filter(function (t) { return t.updatedAt; });
+  if (withUpdate.length === 0) {
+    el.innerHTML = "Aun no hay actualizaciones registradas en el cronograma.";
+    return;
+  }
+  var latest = withUpdate.reduce(function (a, b) { return a.updatedAt > b.updatedAt ? a : b; });
+  el.innerHTML =
+    "Ultima actualizacion: <b>" + latest.updatedBy + "</b> &middot; " + fmtRelativeOrDate(latest.updatedAt) +
+    " &middot; " + latest.nombre;
 }
 
 document.getElementById("searchInput").addEventListener("input", function (e) {
