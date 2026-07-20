@@ -31,7 +31,31 @@ async function getTaskState(env, id) {
   }
 }
 
-async function buildFullTaskList(env) {
+// Calcula el % esperado de avance segun cuanto tiempo ha transcurrido entre
+// la fecha de inicio y fin de una tarea, comparado con la fecha de hoy.
+// Reemplaza el antiguo "% Completado" fijo del Excel: este valor se
+// recalcula solo, todos los dias, sin necesidad de mantenerlo a mano.
+function computeExpectedPct(inicioStr, finStr) {
+  if (!inicioStr || !finStr) return 0;
+  var ini = new Date(inicioStr + "T00:00:00Z").getTime();
+  var fin = new Date(finStr + "T00:00:00Z").getTime();
+  var now = Date.now();
+  var dur = fin - ini;
+  var frac;
+  if (dur <= 0) {
+    frac = now >= ini ? 1 : 0;
+  } else {
+    frac = (now - ini) / dur;
+    if (frac < 0) frac = 0;
+    if (frac > 1) frac = 1;
+  }
+  return frac;
+}
+
+// Construye la lista completa leyendo los 171 estados individuales de KV.
+// COSTOSA: hace una lectura de KV por cada tarea. Solo se usa una vez, para
+// "arrancar" el cache la primera vez, o si alguien pide reconstruirlo a mano.
+async function buildFullTaskListFromIndividualStates(env) {
   var states = await Promise.all(
     SCHEDULE.map(function (row) {
       return getTaskState(env, row.id);
@@ -46,7 +70,7 @@ async function buildFullTaskList(env) {
       proceso: row.proceso,
       actividad: row.actividad,
       nombre: row.nombre,
-      pctPlan: row.pctPlan,
+      pctPlan: computeExpectedPct(row.inicio, row.fin),
       pctReal: pctReal,
       inicio: row.inicio,
       fin: row.fin,
@@ -56,6 +80,45 @@ async function buildFullTaskList(env) {
       updatedAt: state ? state.updatedAt || null : null,
     };
   });
+}
+
+var CACHE_KEY = "cache:tasks_v1";
+
+async function getCachedTasks(env) {
+  var raw = await env.YAZAKI_KV.get(CACHE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+async function setCachedTasks(env, tasksArray) {
+  await env.YAZAKI_KV.put(CACHE_KEY, JSON.stringify(tasksArray));
+}
+
+// Forma BARATA de obtener la lista de tareas: 1 sola lectura de KV (el cache),
+// en vez de 171. El % esperado se recalcula siempre en vivo porque depende
+// de la fecha de hoy y no debe quedar guardado en el cache.
+async function getTasksListCheap(env) {
+  var cached = await getCachedTasks(env);
+  if (cached) {
+    return cached.map(function (t) {
+      return {
+        id: t.id, area: t.area, proceso: t.proceso, actividad: t.actividad, nombre: t.nombre,
+        pctPlan: computeExpectedPct(t.inicio, t.fin), pctReal: t.pctReal,
+        inicio: t.inicio, fin: t.fin, dur: t.dur, resumen: t.resumen,
+        updatedBy: t.updatedBy, updatedAt: t.updatedAt,
+      };
+    });
+  }
+  // No existe cache todavia (primera vez tras este despliegue): se construye
+  // una sola vez leyendo los estados individuales (esto preserva todo lo que
+  // los supervisores ya habian reportado antes de este cambio) y se guarda.
+  var fresh = await buildFullTaskListFromIndividualStates(env);
+  await setCachedTasks(env, fresh);
+  return fresh;
 }
 
 function computeSummary(tasks) {
@@ -135,13 +198,22 @@ export default {
     }
 
     if (path === "/api/tasks" && request.method === "GET") {
-      var tasks = await buildFullTaskList(env);
+      var tasks = await getTasksListCheap(env);
       return jsonResponse({ tasks: tasks });
     }
 
     if (path === "/api/summary" && request.method === "GET") {
-      var tasksForSummary = await buildFullTaskList(env);
+      var tasksForSummary = await getTasksListCheap(env);
       return jsonResponse(computeSummary(tasksForSummary));
+    }
+
+    // Endpoint de mantenimiento: reconstruye el cache desde cero leyendo los
+    // 171 estados individuales. Normalmente no hace falta usarlo, pero sirve
+    // como "boton de emergencia" si el cache alguna vez queda desincronizado.
+    if (path === "/api/rebuild-cache" && request.method === "GET") {
+      var rebuilt = await buildFullTaskListFromIndividualStates(env);
+      await setCachedTasks(env, rebuilt);
+      return jsonResponse({ ok: true, tareas: rebuilt.length, mensaje: "Cache reconstruido desde los estados individuales." });
     }
 
     var match = path.match(/^\/api\/tasks\/([a-zA-Z0-9_-]+)$/);
@@ -169,7 +241,30 @@ export default {
         updatedBy: body.updatedBy || "supervisor",
         updatedAt: new Date().toISOString(),
       };
+
+      // 1) Escritura durable individual: fuente de verdad, segura ante
+      //    varios supervisores guardando al mismo tiempo en tareas distintas.
       await env.YAZAKI_KV.put("state:" + id, JSON.stringify(newState));
+
+      // 2) Actualizar el cache agregado (barato: 1 lectura + 1 escritura,
+      //    no 171). Si el cache no existiera todavia, se arma una sola vez.
+      var cached = await getCachedTasks(env);
+      if (!cached) {
+        cached = await buildFullTaskListFromIndividualStates(env);
+      }
+      var updatedCache = cached.map(function (t) {
+        if (t.id === id) {
+          return {
+            id: t.id, area: t.area, proceso: t.proceso, actividad: t.actividad, nombre: t.nombre,
+            pctPlan: t.pctPlan, pctReal: pctReal,
+            inicio: t.inicio, fin: t.fin, dur: t.dur, resumen: t.resumen,
+            updatedBy: newState.updatedBy, updatedAt: newState.updatedAt,
+          };
+        }
+        return t;
+      });
+      await setCachedTasks(env, updatedCache);
+
       return jsonResponse({ ok: true, id: id, state: newState });
     }
 
