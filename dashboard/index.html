@@ -444,6 +444,38 @@ function computeExecAt(parsed, t) {
   return Math.min(1, Math.max(0, sum));
 }
 
+// Proyecta cada tarea de forma individual (igual que se arma el Planificado),
+// pero ajustando el ritmo de cada una segun que tan rapido o lento va en la
+// realidad. Al sumar muchas tareas con fechas escalonadas, el resultado
+// vuelve a tener la forma de "S", no una linea recta.
+function computeProjAt(parsed, t, todayClamped) {
+  var sum = 0;
+  parsed.forEach(function (p) {
+    var dur = p.fin - p.ini;
+    var fracT, fracToday;
+    if (dur <= 0) {
+      fracT = t >= p.ini ? 1 : 0;
+      fracToday = todayClamped >= p.ini ? 1 : 0;
+    } else {
+      fracT = (t - p.ini) / dur;
+      if (fracT < 0) fracT = 0;
+      if (fracT > 1) fracT = 1;
+      fracToday = (todayClamped - p.ini) / dur;
+      if (fracToday < 0) fracToday = 0;
+      if (fracToday > 1) fracToday = 1;
+    }
+    var actualToday = Math.min(fracToday, p.pctReal);
+    // Ritmo de esta tarea respecto a su propio avance planificado a la fecha.
+    // Se acota para que una tarea recien iniciada (con poco tiempo transcurrido)
+    // no dispare la proyeccion por ruido en los datos.
+    var rate = actualToday / Math.max(fracToday, 0.02);
+    if (rate < 0) rate = 0;
+    if (rate > 4) rate = 4;
+    sum += p.w * Math.min(1, rate * fracT);
+  });
+  return Math.min(1, Math.max(0, sum));
+}
+
 function buildSCurveData(tasks) {
   var leaf = tasks.filter(function (t) { return !t.resumen && t.inicio && t.fin; });
   var totalDur = leaf.reduce(function (acc, t) { return acc + t.dur; }, 0);
@@ -464,12 +496,7 @@ function buildSCurveData(tasks) {
   today.setHours(0, 0, 0, 0);
   var todayTime = today.getTime();
   var todayClamped = Math.min(Math.max(todayTime, minTime), maxTime);
-
-  // Ritmo real promedio hasta hoy (avance acumulado / dias transcurridos),
-  // usado para proyectar hacia adelante "si seguimos a este paso".
   var todayActual = computeExecAt(parsed, todayClamped);
-  var daysElapsed = (todayClamped - minTime) / 86400000;
-  var rate = daysElapsed > 0 ? todayActual / daysElapsed : 0;
 
   var numPoints = 60;
   var points = [];
@@ -478,11 +505,7 @@ function buildSCurveData(tasks) {
     var plan = computePlanAt(parsed, t);
     var hasExec = t <= todayTime;
     var exec = hasExec ? computeExecAt(parsed, t) : null;
-    var proj = null;
-    if (t >= todayClamped) {
-      var daysFromToday = (t - todayClamped) / 86400000;
-      proj = Math.min(1, Math.max(0, todayActual + rate * daysFromToday));
-    }
+    var proj = t >= todayClamped ? computeProjAt(parsed, t, todayClamped) : null;
     points.push({ t: t, plan: plan, exec: exec, proj: proj });
   }
 
