@@ -131,9 +131,10 @@
   .viz-grid{ display:grid; grid-template-columns: 1.3fr 1fr; gap:16px; margin-bottom:16px; }
   @media (max-width: 860px){ .viz-grid{ grid-template-columns: 1fr; } }
 
-  .scurve-legend{ display:flex; gap:18px; margin-top:2px; margin-bottom:10px; font-size:11.5px; color:var(--text-dim); }
+  .scurve-legend{ display:flex; gap:18px; margin-top:2px; margin-bottom:10px; font-size:11.5px; color:var(--text-dim); flex-wrap:wrap; }
   .legend-item{ display:flex; align-items:center; gap:6px; }
   .legend-swatch{ width:16px; height:3px; border-radius:2px; }
+  .legend-swatch.dashed{ height:0; border-top:3px dashed #38bdf8; }
 
   .bars-list{ display:flex; flex-direction:column; gap:10px; margin-top:4px; }
   .bar-row{ display:grid; grid-template-columns: 140px 1fr 46px; align-items:center; gap:10px; }
@@ -179,9 +180,10 @@
   <div class="tab-panel active" data-panel="resumen" id="tabResumen">
     <div class="viz-grid">
       <div class="card">
-        <div class="label" style="font-size:12.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.6px;">Curva S: planificado vs ejecutado</div>
+        <div class="label" style="font-size:12.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.6px;">Curva S: planificado, ejecutado y proyectado</div>
         <div class="scurve-legend">
           <div class="legend-item"><span class="legend-swatch" style="background:#6b7280;"></span>Planificado (proyecto completo)</div>
+          <div class="legend-item"><span class="legend-swatch dashed"></span>Proyectado (tendencia actual)</div>
           <div class="legend-item"><span class="legend-swatch" style="background:var(--orange);"></span>Ejecutado (a la fecha)</div>
         </div>
         <div id="scurveContainer"><div class="loading">Cargando...</div></div>
@@ -408,6 +410,40 @@ function renderRanking(summary) {
   document.getElementById("rankingList").innerHTML = html;
 }
 
+function computePlanAt(parsed, t) {
+  var sum = 0;
+  parsed.forEach(function (p) {
+    var dur = p.fin - p.ini;
+    var frac;
+    if (dur <= 0) {
+      frac = t >= p.ini ? 1 : 0;
+    } else {
+      frac = (t - p.ini) / dur;
+      if (frac < 0) frac = 0;
+      if (frac > 1) frac = 1;
+    }
+    sum += p.w * frac;
+  });
+  return Math.min(1, Math.max(0, sum));
+}
+
+function computeExecAt(parsed, t) {
+  var sum = 0;
+  parsed.forEach(function (p) {
+    var dur = p.fin - p.ini;
+    var frac;
+    if (dur <= 0) {
+      frac = t >= p.ini ? 1 : 0;
+    } else {
+      frac = (t - p.ini) / dur;
+      if (frac < 0) frac = 0;
+      if (frac > 1) frac = 1;
+    }
+    sum += p.w * Math.min(frac, p.pctReal);
+  });
+  return Math.min(1, Math.max(0, sum));
+}
+
 function buildSCurveData(tasks) {
   var leaf = tasks.filter(function (t) { return !t.resumen && t.inicio && t.fin; });
   var totalDur = leaf.reduce(function (acc, t) { return acc + t.dur; }, 0);
@@ -427,33 +463,36 @@ function buildSCurveData(tasks) {
   var today = new Date();
   today.setHours(0, 0, 0, 0);
   var todayTime = today.getTime();
+  var todayClamped = Math.min(Math.max(todayTime, minTime), maxTime);
+
+  // Ritmo real promedio hasta hoy (avance acumulado / dias transcurridos),
+  // usado para proyectar hacia adelante "si seguimos a este paso".
+  var todayActual = computeExecAt(parsed, todayClamped);
+  var daysElapsed = (todayClamped - minTime) / 86400000;
+  var rate = daysElapsed > 0 ? todayActual / daysElapsed : 0;
 
   var numPoints = 60;
   var points = [];
   for (var i = 0; i <= numPoints; i++) {
     var t = minTime + (maxTime - minTime) * (i / numPoints);
-    var planSum = 0;
-    var execSum = 0;
+    var plan = computePlanAt(parsed, t);
     var hasExec = t <= todayTime;
-    parsed.forEach(function (p) {
-      var dur = p.fin - p.ini;
-      var frac;
-      if (dur <= 0) {
-        frac = t >= p.ini ? 1 : 0;
-      } else {
-        frac = (t - p.ini) / dur;
-        if (frac < 0) frac = 0;
-        if (frac > 1) frac = 1;
-      }
-      planSum += p.w * frac;
-      if (hasExec) {
-        execSum += p.w * Math.min(frac, p.pctReal);
-      }
-    });
-    points.push({ t: t, plan: Math.min(1, Math.max(0, planSum)), exec: hasExec ? Math.min(1, Math.max(0, execSum)) : null });
+    var exec = hasExec ? computeExecAt(parsed, t) : null;
+    var proj = null;
+    if (t >= todayClamped) {
+      var daysFromToday = (t - todayClamped) / 86400000;
+      proj = Math.min(1, Math.max(0, todayActual + rate * daysFromToday));
+    }
+    points.push({ t: t, plan: plan, exec: exec, proj: proj });
   }
 
-  return { points: points, minTime: minTime, maxTime: maxTime, todayTime: todayTime };
+  // Insertar el punto exacto de "hoy": garantiza que la linea ejecutada y la
+  // proyectada se toquen sin espacios, sin depender de que el muestreo
+  // regular caiga justo en esa fecha.
+  points.push({ t: todayClamped, plan: computePlanAt(parsed, todayClamped), exec: todayActual, proj: todayActual });
+  points.sort(function (a, b) { return a.t - b.t; });
+
+  return { points: points, minTime: minTime, maxTime: maxTime, todayTime: todayTime, todayClamped: todayClamped };
 }
 
 function fmtAxisDate(t) {
@@ -503,6 +542,16 @@ function renderSCurve(tasks) {
     execStarted = true;
   });
 
+  var projPath = "";
+  var projStarted = false;
+  data.points.forEach(function (pt) {
+    if (pt.proj === null) return;
+    var x = xForT(pt.t);
+    var y = yForPct(pt.proj);
+    projPath += (!projStarted ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+    projStarted = true;
+  });
+
   var todayClamped = Math.min(Math.max(data.todayTime, data.minTime), data.maxTime);
   var todayX = xForT(todayClamped);
 
@@ -525,6 +574,7 @@ function renderSCurve(tasks) {
     + gridLines
     + '<line x1="' + todayX + '" y1="' + padT + '" x2="' + todayX + '" y2="' + (height - padB) + '" stroke="#ff7a1a" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>'
     + '<path d="' + planPath.trim() + '" fill="none" stroke="#6b7280" stroke-width="2.5"/>'
+    + '<path d="' + projPath.trim() + '" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-dasharray="7,5"/>'
     + '<path d="' + execPath.trim() + '" fill="none" stroke="#ff7a1a" stroke-width="2.5"/>'
     + dateLabels
     + "</svg>";
