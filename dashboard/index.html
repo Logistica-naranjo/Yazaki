@@ -221,6 +221,11 @@
     <div id="mainContent">
       <div class="loading">Cargando informacion del proyecto...</div>
     </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="label" style="font-size:12.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:2px;">Registro de acceso a la app de campo</div>
+      <div class="week-report-count" style="margin-bottom:10px;">Evidencia de quien entro a reportar avance, con que puesto, y cuando</div>
+      <div id="accessLogContent"><div class="loading">Cargando...</div></div>
+    </div>
   </div>
 
   <div class="tab-panel" data-panel="semaforo" id="tabSemaforo">
@@ -908,14 +913,40 @@ function renderSCurve(tasks) {
   container.innerHTML = svg;
 }
 
+function fmtFechaHora(iso) {
+  if (!iso) return "-";
+  var d = new Date(iso);
+  return d.toLocaleDateString("es-GT") + " " + d.toLocaleTimeString("es-GT", { hour: "2-digit", minute: "2-digit" });
+}
+
+function renderAccessLog(entries) {
+  var container = document.getElementById("accessLogContent");
+  if (!entries || entries.length === 0) {
+    container.innerHTML = '<div class="empty-state">Aun no hay registros de acceso a la app de campo.</div>';
+    return;
+  }
+  var html = '<table><thead><tr><th>Nombre</th><th>Puesto</th><th>Fecha y hora de acceso</th></tr></thead><tbody>';
+  entries.slice(0, 20).forEach(function (e) {
+    html += "<tr>";
+    html += "  <td>" + e.nombre + "</td>";
+    html += "  <td>" + (e.puesto || "-") + "</td>";
+    html += "  <td>" + fmtFechaHora(e.timestamp) + "</td>";
+    html += "</tr>";
+  });
+  html += "</tbody></table>";
+  container.innerHTML = html;
+}
+
 function loadAll() {
   Promise.all([
     fetch(API_BASE + "/api/tasks").then(function (r) { return r.json(); }),
     fetch(API_BASE + "/api/summary").then(function (r) { return r.json(); }),
+    fetch(API_BASE + "/api/access-log").then(function (r) { return r.json(); }),
   ])
     .then(function (results) {
       var tasksData = results[0];
       var summary = results[1];
+      var accessLog = results[2];
       allTasksGlobal = tasksData.tasks;
 
       renderDashboard(summary);
@@ -925,6 +956,7 @@ function loadAll() {
       renderSCurve(allTasksGlobal);
       renderWeeklyBars(allTasksGlobal);
       renderDelayReport(allTasksGlobal);
+      renderAccessLog(accessLog.entries);
     })
     .catch(function () {
       document.getElementById("mainContent").innerHTML =
